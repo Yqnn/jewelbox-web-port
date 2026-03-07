@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
+    <link rel="apple-touch-icon" href="pwa-512x512.png" />
+    <title>Jewelbox</title>
+    <meta name="theme-color" content="#000000" />
+    <!-- iOS Safari: prevent pinch-zoom (viewport meta is ignored since iOS 10) -->
+    <script>
+      (function () {
+        function preventZoom(e) {
+          e.preventDefault();
+        }
+        document.addEventListener('gesturestart', preventZoom, {
+          passive: false,
+        });
+        document.addEventListener('gesturechange', preventZoom, {
+          passive: false,
+        });
+        document.addEventListener('gestureend', preventZoom, {
+          passive: false,
+        });
+      })();
+    </script>
+    <link rel="icon" href="favicon.png" type="image/png" />
+    <link rel="apple-touch-icon" href="favicon.png" />
+    <script type="module" crossorigin src="/jewelbox-web-port/assets/index-BnliusmC.js"></script>
+    <link rel="stylesheet" crossorigin href="/jewelbox-web-port/assets/index-klBytr-0.css">
+  <link rel="manifest" href="/jewelbox-web-port/manifest.webmanifest"><script id="vite-plugin-pwa:register-sw" src="/jewelbox-web-port/registerSW.js"></script></head>
+  <body>
+    <div class="main-container">
+      <div class="game-wrapper">
+        <canvas id="gameCanvas"></canvas>
+      </div>
+    </div>
+
+    <div class="mobile-controls" id="mobileControls">
+      <div class="mobile-controls-inner">
+        <button
+          id="mobileLeft"
+          class="mobile-btn"
+          aria-label="Move left"
+        ></button>
+        <button
+          id="mobileRight"
+          class="mobile-btn"
+          aria-label="Move right"
+        ></button>
+        <button
+          id="mobileHardDrop"
+          class="mobile-btn"
+          aria-label="Fast drop"
+        ></button>
+        <button
+          id="mobileRotate"
+          class="mobile-btn"
+          aria-label="Rotate clockwise"
+        ></button>
+        <button
+          type="button"
+          id="mobileStartPause"
+          class="mobile-btn mobile-btn-text"
+        >
+          Start
+        </button>
+        <button
+          type="button"
+          id="mobileToggleBar"
+          class="mobile-btn mobile-btn-text"
+        >
+          Menu
+        </button>
+      </div>
+      <div id="deadArea"></div>
+    </div>
+
+    <div class="side-panel-wrapper" id="sidePanelWrapper">
+      <div class="side-panel">
+        <div class="controls-row">
+          <button id="startBtn" class="game-btn primary">Begin Game</button>
+          <button id="pauseBtn" class="game-btn" disabled>Pause</button>
+          <button id="highScoresBtn" class="game-btn">High Scores</button>
+          <button id="aboutBtn" class="game-btn">About...</button>
+        </div>
+        <div class="controls-row">
+          <button id="soundBtn" class="game-btn">Sound Effects: ON</button>
+          <button id="musicBtn" class="game-btn">Music: ON</button>
+          <div class="settings-section">
+            <label for="displaySelect">Display:</label>
+            <div class="select-wrap">
+              <select id="displaySelect">
+                <option value="window">Color</option>
+                <option value="mobile">Mobile</option>
+              </select>
+            </div>
+          </div>
+          <div class="settings-section">
+            <label for="levelSelect">Starting Level:</label>
+            <div class="select-wrap">
+              <select id="levelSelect">
+                <option value="1">Level 1</option>
+                <option value="2">Level 2</option>
+                <option value="3">Level 3</option>
+                <option value="4">Level 4</option>
+                <option value="5">Level 5</option>
+                <option value="6">Level 6</option>
+                <option value="7">Level 7</option>
+                <option value="8">Level 8</option>
+                <option value="9">Level 9</option>
+                <option value="10">Level 10</option>
+                <option value="11">Level 11</option>
+                <option value="12">Level 12</option>
+                <option value="13">Level 13</option>
+                <option value="14">Level 14</option>
+                <option value="15">Level 15</option>
+                <option value="16">Level 16</option>
+                <option value="17">Level 17</option>
+                <option value="18">Level 18</option>
+                <option value="19">Level 19</option>
+                <option value="20">Level 20</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="controls-row">
+          <div class="controls-help">
+            <span>Controls:</span>
+            <table>
+              <tr>
+                <td><kbd>←</kbd> / <kbd>J</kbd></td>
+                <td>Move Left</td>
+              </tr>
+              <tr>
+                <td><kbd>→</kbd> / <kbd>L</kbd></td>
+                <td>Move Right</td>
+              </tr>
+              <tr>
+                <td><kbd>↓</kbd> / <kbd>Space</kbd></td>
+                <td>Drop</td>
+              </tr>
+              <tr>
+                <td><kbd>↑</kbd> / <kbd>K</kbd></td>
+                <td>Rotate</td>
+              </tr>
+              <tr>
+                <td><kbd>P</kbd></td>
+                <td>Pause</td>
+              </tr>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="highScoreModalOverlay" class="highscore-modal-overlay" hidden>
+      <div id="highScoreModal" class="highscore-modal popup-window">
+        <div class="highscore-modal-content">
+          <div class="highscore-modal-text">
+            <p>
+              Congratulations! You've scored in the top ten! Please enter your
+              name. (Max. 15 chars.)
+            </p>
+            <input
+              type="text"
+              id="highScoreNameInput"
+              class="highscore-modal-input"
+              maxlength="15"
+              value="Player"
+              placeholder="Player"
+              data-1p-ignore
+            />
+            <button
+              type="button"
+              id="highScoreModalOk"
+              class="game-btn primary"
+            >
+              OK
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </body>
+</html>

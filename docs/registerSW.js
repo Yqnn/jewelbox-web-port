@@ -1,0 +1,1 @@
+if('serviceWorker' in navigator) {window.addEventListener('load', () => {navigator.serviceWorker.register('/jewelbox-web-port/sw.js', { scope: '/jewelbox-web-port/' })})}
