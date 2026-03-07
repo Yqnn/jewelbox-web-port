@@ -104,7 +104,7 @@ export const EXTRA_LIFE_SCORE_THRESHOLD = 100_000;
 export const STARTING_LIVES = 3;
 
 // Spawn chances
-export const WILDCARD_TRIPLET_CHANCE = 0.025; // ~1.5% of pieces
+export const WILDCARD_TRIPLET_CHANCE = 0.025;
 export const COMMON_JEWEL_WEIGHT = 16;
 export const ONYX_JEWEL_WEIGHT = 3; // Onyx available from start; lower than regular weight
 

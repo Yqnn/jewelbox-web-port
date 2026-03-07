@@ -103,6 +103,7 @@ export const setSettingsUI = ({
 };
 
 export const initHandlers = ({
+  shouldMobileControlsPreventDefault,
   onPause,
   onKeyDown,
   onClick,
@@ -115,6 +116,7 @@ export const initHandlers = ({
   onSelectDisplay,
   initialSettings,
 }: {
+  shouldMobileControlsPreventDefault: () => boolean;
   onPause: () => void;
   onKeyDown: (key: string) => void;
   onClick: (e: MouseEvent) => void;
@@ -252,9 +254,11 @@ export const initHandlers = ({
   );
 
   document.body.classList.add('enable-transition');
-  getElement('mobileControls').addEventListener('touchstart', (e) =>
-    e.preventDefault()
-  );
+  getElement('mobileControls').addEventListener('touchstart', (e) => {
+    if (shouldMobileControlsPreventDefault()) {
+      e.preventDefault();
+    }
+  });
 
   let currentState: 'running' | 'ready' | 'paused' = 'ready';
   const setState = (state: 'running' | 'ready' | 'paused') => {

@@ -543,15 +543,15 @@ kbd {
   #mobileHardDrop {
     background-image: url('/sprites/arrow_down_dashed.png');
     left: 60px;
-    bottom: 160px;
+    bottom: 60px;
   }
   #mobileRotate {
     background-image: url('/sprites/turn_counterclockwise.png');
     right: 20px;
-    bottom: 135px;
-    width: 70px;
-    height: 70px;
-    border-radius: 35px;
+    bottom: 90px;
+    width: 90px;
+    height: 90px;
+    border-radius: 45px;
   }
   #mobileStartPause {
     left: calc(50% + 40px);

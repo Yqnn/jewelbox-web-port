@@ -71,6 +71,7 @@ async function init() {
 
   const setState = initHandlers({
     initialSettings: settings,
+    shouldMobileControlsPreventDefault: () => introPhase === 'done',
     onStart: () => {
       if (isGameInProgress) {
         stopGame();

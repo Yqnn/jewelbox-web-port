@@ -387,14 +387,14 @@ function placePieceOnBoard(
       ok = false;
     }
 
-    if (
-      jewel === JEWEL_WILDCARD_ID &&
-      wildcardTargetColor === null &&
-      row > 0
-    ) {
-      const below = state.board[col][row - 1] as JewelId;
-      if (below && below !== JEWEL_WILDCARD_ID) {
-        wildcardTargetColor = below;
+    if (jewel === JEWEL_WILDCARD_ID && wildcardTargetColor === null) {
+      if (row > 0) {
+        const below = state.board[col][row - 1] as JewelId;
+        if (below && below !== JEWEL_WILDCARD_ID) {
+          wildcardTargetColor = state.board[col][row - 1] as JewelId;
+        }
+      } else {
+        wildcardTargetColor = JEWEL_WILDCARD_ID;
       }
     }
 
@@ -539,16 +539,12 @@ function collectRun(
     board[col][row]
   ) {
     const value = board[col][row] as JewelId;
-    if (value === JEWEL_WILDCARD_ID) {
-      cells.push({ col, row });
-    } else {
-      if (baseColor === null) {
-        baseColor = value;
-      } else if (value !== baseColor) {
-        break;
-      }
-      cells.push({ col, row });
+    if (baseColor === null) {
+      baseColor = value;
+    } else if (value !== baseColor) {
+      break;
     }
+    cells.push({ col, row });
 
     col += dir.col;
     row += dir.row;
