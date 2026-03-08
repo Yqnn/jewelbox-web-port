@@ -94,6 +94,7 @@ export const UNLOCK_JEWEL_8_SCORE = 50_000;
 export const SCORE_MATCH_BASE = 300; // First 3 jewels
 export const SCORE_MATCH_EXTRA_PER_JEWEL = 150; // Each jewel beyond 3
 export const SCORE_ONYX_BONUS_PER_JEWEL = 500;
+export const SCORE_ONYX_BONUS_PER_ROW_ON_GROUND = 12_000;
 
 // Drop scoring
 export const SCORE_DROP_PER_ROW = 10;
@@ -127,7 +128,7 @@ export type InternalGameState = {
   isGameOver: boolean;
   events: Sound[];
 
-  board: number[][];
+  board: JewelId[][];
 
   currentPiece: Piece | null;
   nextPiece: Piece | null;

@@ -18,4 +18,10 @@ export default defineConfig(
     },
   },
   eslintConfigPrettier,
+  {
+    files: ["**/*.ts"],
+    rules: {
+      "curly": ["error", "all"],
+    },
+  },
 );

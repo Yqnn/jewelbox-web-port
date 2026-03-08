@@ -31,14 +31,15 @@ import {
   UNLOCK_JEWEL_8_SCORE,
   WILDCARD_TRIPLET_CHANCE,
   FREEFALL_RATE_TICKS,
+  SCORE_ONYX_BONUS_PER_ROW_ON_GROUND,
 } from './game.constants';
 
 export const initGame = () => {
   let state = makeInitialGameState(true);
 
-  const start = (level: Level) => {
+  const start = () => {
     state = makeInitialGameState();
-    state.score.level = level;
+    state.score.level = 1;
 
     // Spawn first piece
     startNextPiece(state);
@@ -61,11 +62,6 @@ export const initGame = () => {
         }
       } else if (state.rowClearing.cellsToClear.length) {
         const elapsed = state.tick.count - state.rowClearing.clearAnimStartTime;
-
-        // Phase 1 (0..CLEAR_BLINK_TICKS-1): blink animation.
-        // Phase 2 (CLEAR_BLINK_TICKS): remove cells + apply gravity.
-        // Phase 3 (CLEAR_BLINK_TICKS+1..CLEAR_TOTAL_TICKS-1): settle pause.
-        // Phase 4 (CLEAR_TOTAL_TICKS): check next cascade or spawn piece.
         if (elapsed === CLEAR_BLINK_TICKS) {
           removeClearedCells(state);
         } else if (elapsed >= CLEAR_TOTAL_TICKS) {
@@ -106,9 +102,13 @@ export const initGame = () => {
 
     getRowsToClear: () => state.rowClearing.cellsToClear,
     getClearAnimVisible: () => {
-      if (!state.rowClearing.cellsToClear.length) return false;
+      if (!state.rowClearing.cellsToClear.length) {
+        return false;
+      }
       const elapsed = state.tick.count - state.rowClearing.clearAnimStartTime;
-      if (elapsed >= CLEAR_BLINK_TICKS) return false;
+      if (elapsed >= CLEAR_BLINK_TICKS) {
+        return false;
+      }
       const phase = Math.floor(elapsed / CLEAR_BLINK_HALF);
       return phase % 2 === 0;
     },
@@ -132,8 +132,8 @@ export const initGame = () => {
 // INITIAL STATE
 // ===========================================
 
-function createEmptyBoard(): number[][] {
-  const board: number[][] = [];
+function createEmptyBoard(): JewelId[][] {
+  const board: JewelId[][] = [];
   for (let col = 0; col < BOARD_COLS; col++) {
     board[col] = [];
     for (let row = 0; row < BOARD_ROWS; row++) {
@@ -245,11 +245,7 @@ function createRandomPiece(state: InternalGameState): Piece {
 
   let jewels: [JewelId, JewelId, JewelId];
   if (isWildcardTriplet) {
-    jewels = [JEWEL_WILDCARD_ID, JEWEL_WILDCARD_ID, JEWEL_WILDCARD_ID] as [
-      JewelId,
-      JewelId,
-      JewelId,
-    ];
+    jewels = [JEWEL_WILDCARD_ID, JEWEL_WILDCARD_ID, JEWEL_WILDCARD_ID];
   } else {
     jewels = [
       randomRegularJewel(state),
@@ -279,10 +275,18 @@ function getPieceCells(piece: Piece): Cell[] {
 function isPositionLegal(state: InternalGameState, piece: Piece): boolean {
   const cells = getPieceCells(piece);
   for (const { col, row } of cells) {
-    if (col < 0 || col >= BOARD_COLS) return false;
-    if (row < 0) return false;
-    if (row >= BOARD_ROWS) continue; // Still above the board
-    if (state.board[col][row]) return false;
+    if (col < 0 || col >= BOARD_COLS) {
+      return false;
+    }
+    if (row < 0) {
+      return false;
+    }
+    if (row >= BOARD_ROWS) {
+      continue;
+    } // Still above the board
+    if (state.board[col][row]) {
+      return false;
+    }
   }
   return true;
 }
@@ -291,7 +295,9 @@ function tryMovePieceHorizontal(
   state: InternalGameState,
   deltaCol: number
 ): void {
-  if (!state.currentPiece) return;
+  if (!state.currentPiece) {
+    return;
+  }
   const moved: Piece = {
     ...state.currentPiece,
     column: state.currentPiece.column + deltaCol,
@@ -303,11 +309,15 @@ function tryMovePieceHorizontal(
 
 /** Returns the lowest legal bottomRow for the current piece (0 = on the floor). */
 function getHardDropBottomRow(state: InternalGameState): number {
-  if (!state.currentPiece) return 0;
+  if (!state.currentPiece) {
+    return 0;
+  }
   let bottomRow = state.currentPiece.bottomRow;
   while (bottomRow > 0) {
     const moved: Piece = { ...state.currentPiece, bottomRow: bottomRow - 1 };
-    if (!isPositionLegal(state, moved)) break;
+    if (!isPositionLegal(state, moved)) {
+      break;
+    }
     bottomRow--;
   }
   return bottomRow;
@@ -318,7 +328,9 @@ function getHardDropBottomRow(state: InternalGameState): number {
 // ===========================================
 
 function animateActivePiece(state: InternalGameState) {
-  if (!state.currentPiece) return;
+  if (!state.currentPiece) {
+    return;
+  }
   const currentTicks = state.tick.count;
 
   // Determine drop timing
@@ -327,11 +339,15 @@ function animateActivePiece(state: InternalGameState) {
     ? FREEFALL_RATE_TICKS
     : levelSpeed;
 
-  if (currentTicks - state.timing.lastDropTime < dropInterval) return;
+  if (currentTicks - state.timing.lastDropTime < dropInterval) {
+    return;
+  }
 
   state.timing.lastDropTime = currentTicks;
 
-  if (!state.currentPiece) return;
+  if (!state.currentPiece) {
+    return;
+  }
   const moved: Piece = {
     ...state.currentPiece,
     bottomRow: state.currentPiece.bottomRow - 1,
@@ -389,9 +405,9 @@ function placePieceOnBoard(
 
     if (jewel === JEWEL_WILDCARD_ID && wildcardTargetColor === null) {
       if (row > 0) {
-        const below = state.board[col][row - 1] as JewelId;
+        const below = state.board[col][row - 1];
         if (below && below !== JEWEL_WILDCARD_ID) {
-          wildcardTargetColor = state.board[col][row - 1] as JewelId;
+          wildcardTargetColor = state.board[col][row - 1];
         }
       } else {
         wildcardTargetColor = JEWEL_WILDCARD_ID;
@@ -446,7 +462,9 @@ function afterCascadeSequenceFinished(state: InternalGameState) {
 }
 
 function lockPiece(state: InternalGameState, wasDropOrFreefall: boolean) {
-  if (!state.currentPiece) return;
+  if (!state.currentPiece) {
+    return;
+  }
 
   const piece = state.currentPiece;
 
@@ -492,8 +510,10 @@ function isStartOfRun(
   row: number,
   dir: Cell
 ): boolean {
-  const value = board[col][row] as JewelId;
-  if (!value) return false;
+  const value = board[col][row];
+  if (!value) {
+    return false;
+  }
 
   const prevCol = col - dir.col;
   const prevRow = row - dir.row;
@@ -506,8 +526,10 @@ function isStartOfRun(
     return true;
   }
 
-  const prevValue = board[prevCol][prevRow] as JewelId;
-  if (!prevValue) return true;
+  const prevValue = board[prevCol][prevRow];
+  if (!prevValue) {
+    return true;
+  }
 
   if (
     prevValue === JEWEL_WILDCARD_ID ||
@@ -520,7 +542,7 @@ function isStartOfRun(
 }
 
 function collectRun(
-  board: number[][],
+  board: JewelId[][],
   startCol: number,
   startRow: number,
   dir: Cell
@@ -538,7 +560,7 @@ function collectRun(
     row < BOARD_ROWS &&
     board[col][row]
   ) {
-    const value = board[col][row] as JewelId;
+    const value = board[col][row];
     if (baseColor === null) {
       baseColor = value;
     } else if (value !== baseColor) {
@@ -581,7 +603,7 @@ function applyProgressAndBonuses(
       remaining = 0;
     } else {
       remaining -= state.score.rest;
-      if (state.score.level < 10) {
+      if (state.score.level < 20) {
         state.score.level = (state.score.level + 1) as Level;
       }
       state.score.rest = JEWELS_PER_LEVEL;
@@ -603,20 +625,29 @@ function applyProgressAndBonuses(
 function findMatchesAndPrepareCascadeStep(
   state: InternalGameState,
   cascadeIndex: number,
-  isFirstStep: boolean,
   wildcardTargetColor: JewelId | null
 ): CascadeStepResult | null {
+  const isFirstStep = cascadeIndex === 1;
   const board = state.board;
-  const runs: Cell[][] = [];
+  const cellMap = new Map<string, Cell>();
+  let hasOnyxRowOnGround = 0;
 
   // Directional runs
   for (const dir of DIRECTIONS) {
     for (let col = 0; col < BOARD_COLS; col++) {
       for (let row = 0; row < BOARD_ROWS; row++) {
-        if (!isStartOfRun(board, col, row, dir)) continue;
+        if (!isStartOfRun(board, col, row, dir)) {
+          continue;
+        }
         const { cells, baseColor } = collectRun(board, col, row, dir);
         if (baseColor !== null && cells.length >= 3) {
-          runs.push(cells);
+          for (const cell of cells) {
+            const key = `${cell.col}:${cell.row}`;
+            cellMap.set(key, cell);
+          }
+          if (baseColor === JEWEL_ONYX_ID && row === 0 && dir.row === 0) {
+            hasOnyxRowOnGround = 1;
+          }
         }
       }
     }
@@ -627,75 +658,46 @@ function findMatchesAndPrepareCascadeStep(
     const wildcardCells: Cell[] = [];
     for (let col = 0; col < BOARD_COLS; col++) {
       for (let row = 0; row < BOARD_ROWS; row++) {
-        const value = board[col][row] as JewelId;
+        const value = board[col][row];
         if (value === wildcardTargetColor || value === JEWEL_WILDCARD_ID) {
           wildcardCells.push({ col, row });
         }
       }
     }
-    if (wildcardCells.length) {
-      runs.push(wildcardCells);
+    for (const cell of wildcardCells) {
+      const key = `${cell.col}:${cell.row}`;
+      cellMap.set(key, cell);
     }
   }
 
-  if (!runs.length) {
+  if (!cellMap.size) {
     return null;
   }
 
   // Aggregate unique cells and compute score
-  const cellMap = new Map<string, Cell>();
-  let totalScore = 0;
-  let hasOnyx = false;
-
-  for (const run of runs) {
-    const uniqueRunCells: Cell[] = [];
-    for (const cell of run) {
-      const key = `${cell.col}:${cell.row}`;
-      if (!cellMap.has(key)) {
-        cellMap.set(key, cell);
-        uniqueRunCells.push(cell);
-      } else {
-        uniqueRunCells.push(cell);
-      }
+  const cellsToClear = [...cellMap.values()];
+  const onyxCount = cellsToClear.reduce((count, cell) => {
+    if (board[cell.col][cell.row] === JEWEL_ONYX_ID) {
+      return count + 1;
     }
-    if (!uniqueRunCells.length) continue;
+    return count;
+  }, 0);
 
-    const len = uniqueRunCells.length;
-    const effectiveLen =
-      isFirstStep && wildcardTargetColor !== null && len < 3
-        ? 3
-        : Math.max(len, 3);
+  const scoreDelta =
+    (SCORE_MATCH_BASE +
+      SCORE_MATCH_EXTRA_PER_JEWEL * Math.max(0, cellMap.size - 3)) *
+      cascadeIndex +
+    SCORE_ONYX_BONUS_PER_JEWEL * onyxCount +
+    SCORE_ONYX_BONUS_PER_ROW_ON_GROUND * hasOnyxRowOnGround;
 
-    let onyxCount = 0;
-    for (const { col, row } of uniqueRunCells) {
-      if ((board[col][row] as JewelId) === JEWEL_ONYX_ID) {
-        onyxCount++;
-      }
-    }
-    if (onyxCount > 0) hasOnyx = true;
-
-    const base =
-      SCORE_MATCH_BASE +
-      SCORE_MATCH_EXTRA_PER_JEWEL * (effectiveLen - 3) +
-      onyxCount * SCORE_ONYX_BONUS_PER_JEWEL;
-
-    totalScore += base * cascadeIndex;
-  }
-
-  const cellsToClear = Array.from(cellMap.values());
   const removedCount = cellsToClear.length;
-  if (!removedCount) {
-    return null;
-  }
-
-  applyProgressAndBonuses(state, removedCount, totalScore);
 
   return {
     cellsToClear,
     removedCount,
-    scoreDelta: totalScore,
+    scoreDelta,
     cascadeIndex,
-    hasOnyx,
+    hasOnyx: onyxCount > 0,
   };
 }
 
@@ -725,7 +727,6 @@ function startCascadeSequence(
   const firstStep = findMatchesAndPrepareCascadeStep(
     state,
     1,
-    true,
     wildcardTargetColor
   );
   if (!firstStep) {
@@ -775,9 +776,14 @@ function removeClearedCells(state: InternalGameState) {
 
 /** Called after the settle pause: check for cascading matches or spawn next piece. */
 function finishCascadeStep(state: InternalGameState) {
-  if (!state.rowClearing.clearAnimData) return;
+  if (!state.rowClearing.clearAnimData) {
+    return;
+  }
 
-  const { cascadeIndex, wasDropOrFreefall } = state.rowClearing.clearAnimData;
+  const { cascadeIndex, wasDropOrFreefall, removedCount, scoreDelta } =
+    state.rowClearing.clearAnimData;
+
+  applyProgressAndBonuses(state, removedCount, scoreDelta);
 
   state.rowClearing.cellsToClear = [];
   state.rowClearing.clearAnimData = null;
@@ -785,7 +791,6 @@ function finishCascadeStep(state: InternalGameState) {
   const nextStep = findMatchesAndPrepareCascadeStep(
     state,
     cascadeIndex + 1,
-    false,
     null
   );
   if (!nextStep) {
@@ -827,8 +832,9 @@ function handleKeyDown(state: InternalGameState, key: string) {
     state.hardDrop.isHardDropping ||
     state.rowClearing.cellsToClear.length ||
     state.lifeLost.active
-  )
+  ) {
     return;
+  }
 
   if (state.currentPiece) {
     // Single rotate key (K): use forward rotation

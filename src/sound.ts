@@ -20,7 +20,9 @@ const MUSIC_LOOP: [string, number][] = [
 function buildSequence(pairs: [string, number][]): string[] {
   const out: string[] = [];
   for (const [id, count] of pairs) {
-    for (let i = 0; i < count; i++) out.push(id);
+    for (let i = 0; i < count; i++) {
+      out.push(id);
+    }
   }
   return out;
 }
@@ -96,7 +98,9 @@ export const initSound = async (
     }
 
     async function startMusic() {
-      if (!gMusicOn) return;
+      if (!gMusicOn) {
+        return;
+      }
       if (Object.keys(segmentCache).length === 0) {
         await loadMusicSegments();
       }
@@ -111,7 +115,9 @@ export const initSound = async (
     }
 
     function playMusicSegment() {
-      if (!isPlaying || !gMusicOn) return;
+      if (!isPlaying || !gMusicOn) {
+        return;
+      }
 
       const sequence = phase === 'intro' ? INTRO_SEQUENCE : LOOP_SEQUENCE;
       if (sequenceIndex >= sequence.length) {
@@ -189,7 +195,9 @@ export const initSound = async (
     }
 
     function playSound(name: Sound) {
-      if (!audioContext || !sounds[name] || !gSoundOn) return;
+      if (!audioContext || !sounds[name] || !gSoundOn) {
+        return;
+      }
 
       if (audioContext.state === 'suspended') {
         audioContext.resume();
@@ -213,7 +221,9 @@ export const initSound = async (
         try {
           const path = SOUND_FILES[name];
           const response = await fetch(path);
-          if (!response.ok) continue;
+          if (!response.ok) {
+            continue;
+          }
           const arrayBuffer = await response.arrayBuffer();
           const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
           sounds[name] = audioBuffer;

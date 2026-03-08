@@ -1,11 +1,9 @@
 import type { DisplayMode } from './display';
-import type { Level } from './game.constants';
 
 const LOCAL_STORAGE_KEY = 'jewelBoxSettings';
 
 export type Settings = {
   displayMode: DisplayMode;
-  level: Level;
   isMusicOn: boolean;
   isSoundOn: boolean;
 };
@@ -25,7 +23,6 @@ export const initSettings = () => {
   }
   const settings: Settings = {
     displayMode: isMobile ? 'mobile' : 'window',
-    level: 1,
     isMusicOn: true,
     isSoundOn: true,
     ...parsedSettings,

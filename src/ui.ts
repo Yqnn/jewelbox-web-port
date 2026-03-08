@@ -1,10 +1,9 @@
 import { createTouchHeldKeys } from './create-touch-held-keys';
 import type { DisplayMode } from './display';
 import { isDisplayMode } from './display';
-import type { Level } from './game.constants';
 import type { Settings } from './settings';
 
-function getSelect(id: 'levelSelect' | 'displaySelect'): HTMLSelectElement {
+function getSelect(id: 'displaySelect'): HTMLSelectElement {
   return document.getElementById(id) as HTMLSelectElement;
 }
 
@@ -14,6 +13,7 @@ function getButton(
     | 'pauseBtn'
     | 'highScoresBtn'
     | 'aboutBtn'
+    | 'helpBtn'
     | 'musicBtn'
     | 'soundBtn'
     | 'highScoreModalOk'
@@ -85,7 +85,6 @@ export const setSettingsUI = ({
   isMusicOn,
   isSoundOn,
   displayMode,
-  level,
 }: Partial<Settings>) => {
   if (isMusicOn !== undefined) {
     getButton('musicBtn').textContent = 'Music: ' + (isMusicOn ? 'ON' : 'OFF');
@@ -96,9 +95,6 @@ export const setSettingsUI = ({
   }
   if (displayMode !== undefined) {
     getSelect('displaySelect').value = displayMode;
-  }
-  if (level !== undefined) {
-    getSelect('levelSelect').value = level.toString();
   }
 };
 
@@ -112,7 +108,7 @@ export const initHandlers = ({
   onToggleSound,
   onShowHighScores,
   onShowAbout,
-  onSelectLevel,
+  onShowHelp,
   onSelectDisplay,
   initialSettings,
 }: {
@@ -125,7 +121,7 @@ export const initHandlers = ({
   onToggleSound: () => boolean;
   onShowHighScores: () => void;
   onShowAbout: () => void;
-  onSelectLevel: (level: Level) => void;
+  onShowHelp: () => void;
   onSelectDisplay: (mode: DisplayMode) => void;
   initialSettings: Settings;
 }) => {
@@ -133,7 +129,9 @@ export const initHandlers = ({
 
   // Event listeners
   document.addEventListener('keydown', (e) => {
-    if (e.repeat) return;
+    if (e.repeat) {
+      return;
+    }
 
     const highScoreModalOverlay = getElement('highScoreModalOverlay');
     if (!highScoreModalOverlay.hasAttribute('hidden')) {
@@ -192,11 +190,9 @@ export const initHandlers = ({
     onShowAbout();
     document.body.classList.remove('mobile-controls-expanded');
   });
-  getSelect('levelSelect').addEventListener('change', (e) => {
-    const value = (e?.target as HTMLSelectElement)?.value;
-    if (value) {
-      onSelectLevel(parseInt(value) as Level);
-    }
+  getButton('helpBtn').addEventListener('click', () => {
+    onShowHelp();
+    document.body.classList.remove('mobile-controls-expanded');
   });
   getSelect('displaySelect').addEventListener('change', (e) => {
     const mode = (e?.target as HTMLSelectElement)?.value;
@@ -269,7 +265,6 @@ export const initHandlers = ({
     getButton('pauseBtn').disabled = state === 'ready';
     getButton('pauseBtn').classList.toggle('primary', state === 'paused');
     getButton('pauseBtn').textContent = state === 'paused' ? 'Resume' : 'Pause';
-    getSelect('levelSelect').disabled = state !== 'ready';
 
     const mobileStartPause = getButton('mobileStartPause');
     mobileStartPause.textContent =

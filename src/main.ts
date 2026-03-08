@@ -5,7 +5,6 @@ import { initSprites } from './sprites';
 import { initGame } from './game';
 import { initDraw } from './draw';
 import { getCanvas, initHandlers, promptPlayerName } from './ui';
-import type { Level } from './game.constants';
 import { addHighScore, isHighScore, loadHighScores } from './high-scores';
 import type { HighScore } from './high-scores';
 import { getLayout, type DisplayMode } from './display';
@@ -29,9 +28,11 @@ async function init() {
   let lastHighScoreIndex = -1; // Index of player's latest high score entry
   let isShowingHighScores = false; // Whether high scores popup is visible
   let isShowingAbout = false; // Whether about popup is visible
+  let showHelpPage: 1 | 2 | 3 | 4 | undefined;
   let isGameInProgress = false;
   let isGamePaused = false;
-  let isShowingWelcomeScreen = true; // Show welcome screen until game starts
+  let welcomeScreen: 'welcome' | 'credits' | 'highscores' | undefined =
+    'welcome'; // Show welcome screen until game starts
   let lastFrameTime = 0;
   let introPhase: 'pending' | 'done' = 'done';
 
@@ -58,7 +59,7 @@ async function init() {
     game,
     getLayout(settings.displayMode)
   );
-  const sprites = await initSprites(SCALE);
+  const sprites = await initSprites(SCALE, settings.displayMode);
   draw.setSprites(sprites);
   const sound = await initSound(settings.isMusicOn, settings.isSoundOn);
 
@@ -77,17 +78,20 @@ async function init() {
         stopGame();
         return;
       }
-      game.start(settings.level);
+      game.start();
       isShowingHighScores = false;
       isShowingAbout = false;
+      showHelpPage = undefined;
       lastFrameTime = performance.now();
       isGameInProgress = true;
       isGamePaused = false;
-      isShowingWelcomeScreen = false;
+      welcomeScreen = undefined;
       setState('running');
     },
     onPause: () => {
-      if (!isGameInProgress) return;
+      if (!isGameInProgress) {
+        return;
+      }
       if (!isGamePaused) {
         pauseGame();
       } else {
@@ -95,6 +99,7 @@ async function init() {
         setState('running');
         isShowingHighScores = false;
         isShowingAbout = false;
+        showHelpPage = undefined;
         lastFrameTime = performance.now();
       }
     },
@@ -104,6 +109,11 @@ async function init() {
       }
     },
     onClick: () => {
+      if (showHelpPage !== undefined) {
+        showHelpPage =
+          showHelpPage < 4 ? ((showHelpPage + 1) as 1 | 2 | 3 | 4) : undefined;
+        return;
+      }
       isShowingHighScores = false;
       isShowingAbout = false;
     },
@@ -132,19 +142,29 @@ async function init() {
         isShowingAbout = false;
       } else {
         isShowingHighScores = false;
+        showHelpPage = undefined;
         isShowingAbout = true;
         if (isGameInProgress && !isGamePaused) {
           pauseGame();
         }
       }
     },
-    onSelectLevel: (level: Level) => {
-      setSetting('level', level);
+    onShowHelp: () => {
+      if (showHelpPage !== undefined) {
+        showHelpPage = undefined;
+      } else {
+        isShowingHighScores = false;
+        isShowingAbout = false;
+        showHelpPage = 1;
+        if (isGameInProgress && !isGamePaused) {
+          pauseGame();
+        }
+      }
     },
     onSelectDisplay: async (mode: DisplayMode) => {
       setSetting('displayMode', mode);
       draw.setLayout(getLayout(mode));
-      await sprites.setDisplayMode();
+      await sprites.setDisplayMode(mode);
     },
   });
 
@@ -187,10 +207,11 @@ async function init() {
       }
     }
     draw.drawWindow({
-      isShowingHighScores,
+      welcomeScreen,
+      isShowingHighScores: isShowingHighScores,
       lastHighScoreIndex,
-      isShowingWelcomeScreen,
-      isShowingAbout,
+      isShowingAbout: isShowingAbout,
+      showHelpPage,
       isGameInProgress,
       isGamePaused,
       highScores,
@@ -200,7 +221,7 @@ async function init() {
   };
 
   if (game.getCurrentPiece() !== null) {
-    isShowingWelcomeScreen = false;
+    welcomeScreen = undefined;
     isGameInProgress = true;
     pauseGame();
   }
@@ -212,6 +233,15 @@ async function init() {
         sound?.playSound('intro');
       }
       sound?.startMusic();
+      setInterval(() => {
+        if (welcomeScreen === 'welcome') {
+          welcomeScreen = 'credits';
+        } else if (welcomeScreen === 'credits') {
+          welcomeScreen = 'highscores';
+        } else if (welcomeScreen === 'highscores') {
+          welcomeScreen = 'welcome';
+        }
+      }, 10000);
     }
   };
   document.addEventListener('click', start, { once: true });

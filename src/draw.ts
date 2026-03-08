@@ -8,8 +8,9 @@ import type { LayoutConfig } from './display';
 export type DrawWindowParams = {
   isShowingHighScores: boolean;
   lastHighScoreIndex: number;
-  isShowingWelcomeScreen: boolean;
+  welcomeScreen?: 'welcome' | 'credits' | 'highscores';
   isShowingAbout: boolean;
+  showHelpPage?: 1 | 2 | 3 | 4;
   isGameInProgress: boolean;
   isGamePaused: boolean;
   highScores: HighScore[];
@@ -28,6 +29,8 @@ export const initDraw = (
     // Mutable scaled positions
     BOARD_X = 0,
     BOARD_Y = 0,
+    OVERLAY_X = 0,
+    OVERLAY_Y = 0,
     BOARD_WIDTH = 0,
     BOARD_HEIGHT = 0,
     NEXT_X = 0,
@@ -48,6 +51,8 @@ export const initDraw = (
     NEXT_SIZE = layout.NEXT_SIZE * scale;
     SCORE_X = layout.SCORE_X.map((x) => x * scale);
     SCORE_Y = layout.SCORE_Y * scale;
+    OVERLAY_X = layout.OVERLAY_X * scale;
+    OVERLAY_Y = layout.OVERLAY_Y * scale;
 
     canvas.width = layout.WINDOW_WIDTH * scale;
     canvas.height = layout.WINDOW_HEIGHT * scale;
@@ -57,7 +62,9 @@ export const initDraw = (
   }
 
   function drawClearingAnimation() {
-    if (!game.getClearAnimVisible()) return;
+    if (!game.getClearAnimVisible()) {
+      return;
+    }
     ctx.fillStyle = '#000000';
     const cells = game.getRowsToClear() as { col: number; row: number }[];
     for (const { col, row } of cells) {
@@ -77,11 +84,15 @@ export const initDraw = (
     if (!params.showIntroPicture) {
       drawScoreBoxes();
     }
-    if (params.isShowingHighScores) {
+    if (params.isShowingHighScores || params.welcomeScreen === 'highscores') {
       drawHighScoresPopup(params);
     }
     if (params.isShowingAbout) {
-      drawStatic('about');
+      drawImagePopup('about');
+    }
+    if (params.showHelpPage !== undefined) {
+      const helpImages = ['help1', 'help2', 'help3', 'help4'] as const;
+      drawImagePopup(helpImages[params.showHelpPage - 1], true);
     }
   }
 
@@ -94,7 +105,9 @@ export const initDraw = (
 
       for (let i = 0; i < 3; i++) {
         const jewelId = nextPiece.jewels[i];
-        if (!jewelId) continue;
+        if (!jewelId) {
+          continue;
+        }
         const y = bottomY + (2 - i) * BLOCK_HEIGHT;
         drawBlockAt(colX, y, jewelId);
       }
@@ -102,18 +115,18 @@ export const initDraw = (
   }
 
   function drawBoardArea(params: DrawWindowParams) {
-    const {
-      isShowingWelcomeScreen,
-      isGameInProgress,
-      isGamePaused,
-      showIntroPicture,
-    } = params;
+    const { welcomeScreen, isGameInProgress, isGamePaused, showIntroPicture } =
+      params;
     if (showIntroPicture) {
       drawStatic('introPicture', false);
       return;
     }
-    if (isShowingWelcomeScreen) {
+    if (welcomeScreen === 'welcome') {
       drawStatic('welcome');
+      return;
+    }
+    if (welcomeScreen === 'credits') {
+      drawStatic('credits');
       return;
     }
 
@@ -151,14 +164,14 @@ export const initDraw = (
 
     for (let i = 0; i < values.length; i++) {
       ctx.fillStyle = '#e8fd42';
-      ctx.font = `${18 * scale}px Georgia, "Times New Roman", serif`;
+      ctx.font = `${12 * scale}px Charcoal, sans-serif`;
       ctx.textAlign = 'left';
       ctx.fillText(String(values[i]), SCORE_X[i], SCORE_Y);
     }
   }
 
   function drawStatic(
-    type: 'welcome' | 'about' | 'highScores' | 'introPicture',
+    type: 'welcome' | 'highScores' | 'introPicture' | 'credits',
     isCenteredOnBoard: boolean = true
   ) {
     const image = sprites?.getMainSprite(type);
@@ -166,10 +179,10 @@ export const initDraw = (
       ctx.drawImage(
         image,
         isCenteredOnBoard
-          ? BOARD_X + (BOARD_WIDTH - image.width * scale) / 2
+          ? OVERLAY_X
           : (canvas.width - image.width * scale) / 2,
         isCenteredOnBoard
-          ? BOARD_Y + (BOARD_HEIGHT - image.height * scale) / 2
+          ? OVERLAY_Y
           : (canvas.height - image.height * scale) / 2,
         image.width * scale,
         image.height * scale
@@ -194,9 +207,13 @@ export const initDraw = (
 
   function drawBoard() {
     const board = game.getGameBoard();
-    if (!board) return;
+    if (!board) {
+      return;
+    }
     for (let i = 0; i < BOARD_COLS; i++) {
-      if (!board[i]) continue;
+      if (!board[i]) {
+        continue;
+      }
       for (let j = 0; j < BOARD_ROWS; j++) {
         const jewelId = board[i][j];
         if (jewelId) {
@@ -212,11 +229,15 @@ export const initDraw = (
 
   function drawPiece() {
     const currentPiece = game.getCurrentPiece() as Piece | null;
-    if (!currentPiece) return;
+    if (!currentPiece) {
+      return;
+    }
 
     for (let i = 0; i < 3; i++) {
       const jewelId = currentPiece.jewels[i];
-      if (!jewelId) continue;
+      if (!jewelId) {
+        continue;
+      }
 
       const boardCol = currentPiece.column;
       const boardRow = currentPiece.bottomRow + i;
@@ -244,7 +265,71 @@ export const initDraw = (
     }
   }
 
-  /* function drawBeveledBorder(
+  function drawImagePopup(
+    imageName: 'about' | 'help1' | 'help2' | 'help3' | 'help4',
+    hasClickToSeeNext: boolean = false
+  ) {
+    const image = sprites?.getMainSprite(imageName);
+    if (!image?.complete) {
+      return;
+    }
+    const IMG_WIDTH = image.naturalWidth;
+    const IMG_HEIGHT = image.naturalHeight;
+    const BORDER_WIDTH = 3;
+
+    let drawW = IMG_WIDTH * scale;
+    let drawH = IMG_HEIGHT * scale;
+    const BOTTOM_PADDING = hasClickToSeeNext ? 20 * scale : 0;
+    let POPUP_WIDTH = drawW + BORDER_WIDTH * 2 * scale;
+    let POPUP_HEIGHT = drawH + BORDER_WIDTH * 2 * scale + BOTTOM_PADDING;
+
+    if (POPUP_WIDTH > canvas.width) {
+      POPUP_WIDTH = canvas.width;
+      POPUP_HEIGHT = (POPUP_WIDTH * IMG_HEIGHT) / IMG_WIDTH + BOTTOM_PADDING;
+      drawW = POPUP_WIDTH - BORDER_WIDTH * 2 * scale;
+      drawH = POPUP_HEIGHT - BORDER_WIDTH * 2 * scale - BOTTOM_PADDING;
+      ctx.imageSmoothingEnabled = true;
+    }
+
+    const POPUP_X =
+      scale * Math.floor((canvas.width - POPUP_WIDTH) / 2 / scale);
+    const POPUP_Y =
+      scale * Math.floor((canvas.height - POPUP_HEIGHT) / 2 / scale);
+
+    drawBeveledBorder(POPUP_X, POPUP_Y, POPUP_WIDTH, POPUP_HEIGHT);
+
+    // Draw about image centered
+    const CONTENT_X = POPUP_X + BORDER_WIDTH * scale;
+    const CONTENT_Y = POPUP_Y + BORDER_WIDTH * scale;
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillRect(CONTENT_X, CONTENT_Y, drawW, drawH + BOTTOM_PADDING);
+    ctx.drawImage(
+      image,
+      0,
+      0,
+      IMG_WIDTH,
+      IMG_HEIGHT,
+      CONTENT_X,
+      CONTENT_Y,
+      drawW,
+      drawH
+    );
+
+    if (hasClickToSeeNext) {
+      ctx.fillStyle = '#FF0000';
+      ctx.font = `${12 * scale}px Charcoal, sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.fillText(
+        imageName !== 'help4' ? '* Click to see next *' : '* Click to close *',
+        POPUP_X + POPUP_WIDTH / 2,
+        POPUP_Y + POPUP_HEIGHT - 8 * scale
+      );
+    }
+
+    ctx.imageSmoothingEnabled = false;
+  }
+
+  function drawBeveledBorder(
     x: number,
     y: number,
     width: number,
@@ -301,27 +386,23 @@ export const initDraw = (
     ctx.fillStyle = borderColors.topLeft[1];
     ctx.fillRect(width + x - 3 * scale, y + 2 * scale, scale, scale);
     ctx.fillRect(x + 2 * scale, height + y - 3 * scale, scale, scale);
-  }*/
+  }
 
   function drawHighScoresPopup({
     isShowingHighScores,
     lastHighScoreIndex,
     highScores,
   }: DrawWindowParams) {
-    if (!isShowingHighScores) {
-      return;
-    }
-
     drawStatic('highScores');
 
-    const ROW_START_Y = BOARD_Y + 52 * scale;
+    const ROW_START_Y = OVERLAY_Y + 64 * scale;
     const ROW_HEIGHT = 22 * scale;
-    const COL_ID_X = BOARD_X - 22 * scale;
+    const COL_ID_X = OVERLAY_X + 25 * scale;
     const COL_NAME_X = COL_ID_X + 22 * scale;
     const COL_SCORE_X = COL_NAME_X + 120 * scale;
 
     // Draw each high score entry
-    ctx.font = `${15 * scale}px "Times New Roman", serif`;
+    ctx.font = `${12 * scale}px Charcoal, sans-serif`;
 
     for (let i = 0; i < HIGH_SCORE_COUNT; i++) {
       const entry = highScores[i];
@@ -331,7 +412,6 @@ export const initDraw = (
         ctx.fillStyle = '#FF0000'; // gYellowRGB
       } else {
         ctx.fillStyle = '#e8fd42';
-        ctx.font = `${14 * scale}px "Times New Roman", serif`;
       }
 
       ctx.textAlign = 'left';
@@ -340,6 +420,16 @@ export const initDraw = (
       ctx.fillText(`${entry.name}`, COL_NAME_X, y);
       ctx.textAlign = 'left';
       ctx.fillText(String(entry.score), COL_SCORE_X, y);
+    }
+
+    if (isShowingHighScores) {
+      ctx.fillStyle = '#FF0000';
+      ctx.textAlign = 'center';
+      ctx.fillText(
+        '* Click mouse to continue *',
+        BOARD_X + BOARD_WIDTH / 2,
+        BOARD_Y + BOARD_HEIGHT
+      );
     }
   }
 
@@ -352,7 +442,7 @@ export const initDraw = (
   ctx.fillStyle = '#000000';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   ctx.fillStyle = '#FFFFFF';
-  ctx.font = `${12 * scale}px Geneva, Helvetica, sans-serif`;
+  ctx.font = `${12 * scale}px Charcoal, sans-serif`;
   ctx.fillText('Loading assets...', 20, canvas.height / 2);
 
   return {
