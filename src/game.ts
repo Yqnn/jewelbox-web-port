@@ -838,7 +838,7 @@ function handleKeyDown(state: InternalGameState, key: string) {
 
   if (state.currentPiece) {
     // Single rotate key (K): use forward rotation
-    if (key === 'k') {
+    if (key === 'k' || key === 'arrowup') {
       rotateTripletForward(state.currentPiece);
     }
 
