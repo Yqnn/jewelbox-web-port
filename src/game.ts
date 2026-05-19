@@ -19,8 +19,7 @@ import {
   LEVEL_SPEED,
   LIFE_LOST_BLANK_TICKS,
   LIFE_LOST_FREEZE_TICKS,
-  COMMON_JEWEL_WEIGHT,
-  ONYX_JEWEL_WEIGHT,
+  ONYX_JEWEL_CHANCE,
   SCORE_DROP_PER_ROW,
   SCORE_MATCH_BASE,
   SCORE_MATCH_EXTRA_PER_JEWEL,
@@ -173,7 +172,7 @@ function makeInitialGameState(restoreSavedState = false): InternalGameState {
       level: 1,
       rest: JEWELS_PER_LEVEL,
       lives: STARTING_LIVES,
-      extraLifeAwarded: false,
+      extraLifesAwarded: 0,
       activeMaxJewelId: INITIAL_ACTIVE_JEWEL_ID,
     },
     isGameOver: false,
@@ -222,14 +221,6 @@ function randomInt(minInclusive: number, maxInclusive: number): number {
 }
 
 function randomRegularJewel(state: InternalGameState): JewelId {
-  // Onyx (9) is available from the beginning with lower probability
-  const onyx_jewel_change =
-    ONYX_JEWEL_WEIGHT /
-    (COMMON_JEWEL_WEIGHT * (1 + state.score.activeMaxJewelId - JEWEL_FIRST_ID));
-  console.log(onyx_jewel_change);
-  if (Math.random() < onyx_jewel_change) {
-    return JEWEL_ONYX_ID;
-  }
   // Regular colors 1..activeMaxJewelId (6 at start, then 7 at 25k, 8 at 50k)
   const id = randomInt(JEWEL_FIRST_ID, state.score.activeMaxJewelId);
   return id as JewelId;
@@ -247,10 +238,12 @@ function createRandomPiece(state: InternalGameState): Piece {
   if (isWildcardTriplet) {
     jewels = [JEWEL_WILDCARD_ID, JEWEL_WILDCARD_ID, JEWEL_WILDCARD_ID];
   } else {
+    const onyxPosition =
+      Math.random() < ONYX_JEWEL_CHANCE ? randomInt(1, 3) : 0;
     jewels = [
-      randomRegularJewel(state),
-      randomRegularJewel(state),
-      randomRegularJewel(state),
+      onyxPosition === 1 ? JEWEL_ONYX_ID : randomRegularJewel(state),
+      onyxPosition === 2 ? JEWEL_ONYX_ID : randomRegularJewel(state),
+      onyxPosition === 3 ? JEWEL_ONYX_ID : randomRegularJewel(state),
     ];
   }
 
@@ -612,11 +605,11 @@ function applyProgressAndBonuses(
 
   // Extra life at 100,000 points
   if (
-    state.score.currentScore >= EXTRA_LIFE_SCORE_THRESHOLD &&
-    !state.score.extraLifeAwarded
+    state.score.currentScore / EXTRA_LIFE_SCORE_THRESHOLD - 1 >
+    state.score.extraLifesAwarded
   ) {
     state.score.lives += 1;
-    state.score.extraLifeAwarded = true;
+    state.score.extraLifesAwarded++;
   }
 
   updateActiveJewelPalette(state);

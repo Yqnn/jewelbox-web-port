@@ -105,9 +105,8 @@ export const EXTRA_LIFE_SCORE_THRESHOLD = 100_000;
 export const STARTING_LIVES = 3;
 
 // Spawn chances
-export const WILDCARD_TRIPLET_CHANCE = 0.025;
-export const COMMON_JEWEL_WEIGHT = 16;
-export const ONYX_JEWEL_WEIGHT = 3; // Onyx available from start; lower than regular weight
+export const WILDCARD_TRIPLET_CHANCE = 1 / 50;
+export const ONYX_JEWEL_CHANCE = 1 / 30; // Onyx available from start; lower than regular weight
 
 export type InternalGameState = {
   score: {
@@ -120,7 +119,7 @@ export type InternalGameState = {
     // Remaining lives
     lives: number;
     // Whether the 100,000-point bonus life has already been awarded
-    extraLifeAwarded: boolean;
+    extraLifesAwarded: number;
     // Highest jewel ID currently active for random generation (7–9)
     activeMaxJewelId: number;
   };
